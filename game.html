@@ -13,17 +13,14 @@
     color: white;
   }
 
-  /* 🔒 FIXED SIZE CONTAINER */
   #container {
     background: rgba(8,8,8,0.92);
     border: 2px solid #8b0000;
     border-radius: 16px;
     padding: 22px 30px;
     box-shadow: 0 0 22px rgba(180,0,0,0.6);
-
     width: 720px;
-    height: 360px;
-
+    height: 320px;
     box-sizing: border-box;
   }
 
@@ -44,17 +41,27 @@
 
   #word {
     font-size: 64px;
-    letter-spacing: 12px;
     color: #ff2b2b;
     margin: 14px 0;
+    min-height: 80px;
     font-family: Arial, sans-serif;
 
-    text-align: center;
-    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
+    overflow: hidden;       /* 🔒 NEVER CUT */
+  }
+
+  .masked {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  }
+
+  .status {
+    white-space: normal;
+    text-align: center;
+    letter-spacing: 4px;
+    line-height: 1.2;
   }
 
   #timerBar {
@@ -75,10 +82,8 @@
     margin-top: 14px;
     font-size: 22px;
     font-weight: bold;
-    color: #ffffff;
     text-align: center;
     font-family: Arial, sans-serif;
-    text-shadow: 0 0 6px rgba(255,255,255,0.25);
   }
 
   #winner {
@@ -98,18 +103,6 @@
     text-align: center;
     font-family: Arial, sans-serif;
   }
-
-  #leaderboard {
-    margin-top: 12px;
-    font-size: 16px;
-    min-height: 110px;
-    font-family: Arial, sans-serif;
-  }
-
-  .leader {
-    display: flex;
-    justify-content: space-between;
-  }
 </style>
 </head>
 
@@ -119,30 +112,24 @@
   <div id="title">CHAT WORD GAME</div>
   <div id="subtitle">Guess the word in chat</div>
 
-  <!-- ✅ CHANGED TEXT HERE -->
-  <div id="word">LOADING WORD</div>
+  <div id="word" class="status">LOADING WORD</div>
 
-  <div id="timerBar">
-    <div id="timerFill"></div>
-  </div>
+  <div id="timerBar"><div id="timerFill"></div></div>
 
   <div id="instruction">Type <b>!guess &lt;word&gt;</b> in chat</div>
 
   <div id="winner"></div>
   <div id="nextWord"></div>
-  <div id="leaderboard"></div>
 </div>
 
 <script>
   const wordEl = document.getElementById("word");
   const winnerEl = document.getElementById("winner");
   const nextWordEl = document.getElementById("nextWord");
-  const leaderboardEl = document.getElementById("leaderboard");
   const timerFill = document.getElementById("timerFill");
 
   const winSound = new Audio("win.mp3");
   winSound.volume = 0.7;
-
   const ROUND_TIME = 180;
 
   function startTimer() {
@@ -159,39 +146,40 @@
     timerFill.style.width = "100%";
   }
 
-  function renderLeaderboard(list) {
-    leaderboardEl.innerHTML = "<b>Leaderboard</b>";
-    list.forEach((u, i) => {
-      const row = document.createElement("div");
-      row.className = "leader";
-      row.innerHTML = `<span>${i + 1}. ${u.name}</span><span>${u.score}</span>`;
-      leaderboardEl.appendChild(row);
-    });
+  /* 🔥 DYNAMIC SPACING FIX */
+  function setWord(text) {
+    wordEl.innerText = text;
+
+    if (text.includes("_")) {
+      wordEl.className = "masked";
+
+      const letters = text.replace(/ /g, "").length;
+
+      // Dynamic spacing based on word length
+      let spacing = 12;
+      if (letters >= 9) spacing = 8;
+      if (letters >= 11) spacing = 6;
+      if (letters >= 13) spacing = 4;
+
+      wordEl.style.letterSpacing = spacing + "px";
+    } else {
+      wordEl.className = "status";
+      wordEl.style.letterSpacing = "4px";
+    }
   }
 
   window.addEventListener("message", (e) => {
     const data = e.data;
 
     if (data.type === "word") {
-      wordEl.innerText = data.value;
+      setWord(data.value);
 
-      if (
-        data.value === "LOADING WORD" ||
-        data.value === "WORD GAME ENDED"
-      ) {
+      if (data.value === "LOADING WORD" || data.value === "WORD GAME ENDED") {
         stopTimer();
         winnerEl.innerText = "";
       } else {
         startTimer();
       }
-    }
-
-    if (data.type === "winner") {
-      winnerEl.innerText = data.name ? `Winner: ${data.name}` : "";
-    }
-
-    if (data.type === "leaderboard") {
-      renderLeaderboard(data);
     }
 
     if (data.type === "countdown") {
