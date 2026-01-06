@@ -27,7 +27,6 @@
 
     width: 720px;
     height: 320px;
-
     box-sizing: border-box;
   }
 
@@ -46,6 +45,7 @@
     font-family: Arial, sans-serif;
   }
 
+  /* WORD DISPLAY */
   #word {
     margin: 14px 0;
     min-height: 80px;
@@ -101,6 +101,17 @@
     min-height: 28px;
     text-align: center;
     font-family: Arial, sans-serif;
+    opacity: 1;
+  }
+
+  /* 🔥 FADE OUT ANIMATION */
+  .fade-out {
+    animation: fadeOut 1s ease forwards;
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
   }
 
   #nextWord {
@@ -139,6 +150,8 @@
   const winSound = new Audio("win.mp3");
   winSound.volume = 0.7;
 
+  let winnerTimeout = null;
+
   const ROUND_TIME = 180;
 
   function startTimer() {
@@ -155,7 +168,7 @@
     timerFill.style.width = "100%";
   }
 
-  /* 🔥 FONT SIZE SCALING */
+  /* FONT SIZE SCALING */
   function setWord(text) {
     wordEl.innerText = text;
 
@@ -194,8 +207,23 @@
       }
     }
 
-    if (data.type === "winner") {
-      winnerEl.innerText = data.name ? `Winner: ${data.name}` : "";
+    /* 🏆 WINNER WITH AUTO FADE */
+    if (data.type === "winner" && data.name) {
+      clearTimeout(winnerTimeout);
+
+      winnerEl.classList.remove("fade-out");
+      winnerEl.style.opacity = "1";
+      winnerEl.innerText = `Winner: ${data.name}`;
+
+      winnerTimeout = setTimeout(() => {
+        winnerEl.classList.add("fade-out");
+
+        setTimeout(() => {
+          winnerEl.innerText = "";
+          winnerEl.classList.remove("fade-out");
+          winnerEl.style.opacity = "1";
+        }, 1000);
+      }, 5000);
     }
 
     if (data.type === "countdown") {
