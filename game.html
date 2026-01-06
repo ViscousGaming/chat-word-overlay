@@ -13,14 +13,21 @@
     color: white;
   }
 
+  /* 🔒 TOP-RIGHT FIXED OVERLAY */
   #container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+
     background: rgba(8,8,8,0.92);
     border: 2px solid #8b0000;
     border-radius: 16px;
     padding: 22px 30px;
     box-shadow: 0 0 22px rgba(180,0,0,0.6);
+
     width: 720px;
     height: 320px;
+
     box-sizing: border-box;
   }
 
@@ -40,27 +47,28 @@
   }
 
   #word {
-    font-size: 64px;
-    color: #ff2b2b;
     margin: 14px 0;
     min-height: 80px;
     font-family: Arial, sans-serif;
+    color: #ff2b2b;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    overflow: hidden;       /* 🔒 NEVER CUT */
+    white-space: nowrap;
+    overflow: hidden;
+    transition: font-size 0.25s ease;
   }
 
   .masked {
-    white-space: nowrap;
+    letter-spacing: 12px;
   }
 
   .status {
+    letter-spacing: 4px;
     white-space: normal;
     text-align: center;
-    letter-spacing: 4px;
     line-height: 1.2;
   }
 
@@ -130,6 +138,7 @@
 
   const winSound = new Audio("win.mp3");
   winSound.volume = 0.7;
+
   const ROUND_TIME = 180;
 
   function startTimer() {
@@ -146,7 +155,7 @@
     timerFill.style.width = "100%";
   }
 
-  /* 🔥 DYNAMIC SPACING FIX */
+  /* 🔥 FONT SIZE SCALING */
   function setWord(text) {
     wordEl.innerText = text;
 
@@ -155,16 +164,16 @@
 
       const letters = text.replace(/ /g, "").length;
 
-      // Dynamic spacing based on word length
-      let spacing = 12;
-      if (letters >= 9) spacing = 8;
-      if (letters >= 11) spacing = 6;
-      if (letters >= 13) spacing = 4;
+      let fontSize = 64;
+      if (letters >= 9) fontSize = 56;
+      if (letters >= 11) fontSize = 48;
+      if (letters >= 13) fontSize = 42;
+      if (letters >= 15) fontSize = 36;
 
-      wordEl.style.letterSpacing = spacing + "px";
+      wordEl.style.fontSize = fontSize + "px";
     } else {
       wordEl.className = "status";
-      wordEl.style.letterSpacing = "4px";
+      wordEl.style.fontSize = "48px";
     }
   }
 
@@ -174,12 +183,19 @@
     if (data.type === "word") {
       setWord(data.value);
 
-      if (data.value === "LOADING WORD" || data.value === "WORD GAME ENDED") {
+      if (
+        data.value === "LOADING WORD" ||
+        data.value === "WORD GAME ENDED"
+      ) {
         stopTimer();
         winnerEl.innerText = "";
       } else {
         startTimer();
       }
+    }
+
+    if (data.type === "winner") {
+      winnerEl.innerText = data.name ? `Winner: ${data.name}` : "";
     }
 
     if (data.type === "countdown") {
