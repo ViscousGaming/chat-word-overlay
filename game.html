@@ -10,24 +10,35 @@
   body {
     margin: 0;
     background: transparent;
-    font-family: 'Metal Mania', cursive;
     color: white;
   }
 
   #container {
-    background: rgba(5,5,5,0.9);
+    background: rgba(8,8,8,0.92);
     border: 2px solid #8b0000;
-    border-radius: 14px;
-    padding: 20px 28px;
-    box-shadow: 0 0 18px rgba(180,0,0,0.55);
+    border-radius: 16px;
+    padding: 22px 30px;
+    box-shadow: 0 0 22px rgba(180,0,0,0.6);
     width: fit-content;
+  }
+
+  #title {
+    font-family: 'Metal Mania', cursive;
+    font-size: 42px;
+    color: #ff1a1a;
+  }
+
+  #subtitle {
+    font-size: 14px;
+    color: #ccc;
+    margin-bottom: 10px;
   }
 
   #word {
     font-size: 64px;
     letter-spacing: 12px;
     color: #ff2b2b;
-    margin: 10px 0;
+    margin: 14px 0;
   }
 
   #timerBar {
@@ -44,6 +55,12 @@
     background: linear-gradient(90deg, #ff1a1a, #8b0000);
   }
 
+  #instruction {
+    margin-top: 8px;
+    font-size: 16px;
+    color: #ddd;
+  }
+
   #winner {
     margin-top: 6px;
     font-size: 20px;
@@ -53,12 +70,17 @@
   #nextWord {
     margin-top: 6px;
     font-size: 16px;
-    color: #ccc;
+    color: #bbb;
   }
 
-  #scoreboard {
-    margin-top: 10px;
-    font-size: 18px;
+  #leaderboard {
+    margin-top: 14px;
+    font-size: 16px;
+  }
+
+  .leader {
+    display: flex;
+    justify-content: space-between;
   }
 </style>
 </head>
@@ -66,28 +88,25 @@
 <body>
 
 <div id="container">
+  <div id="title">CHAT WORD GAME</div>
+  <div id="subtitle">Guess the word in chat</div>
+
   <div id="word">WAITING FOR !WORD</div>
 
-  <div id="timerBar">
-    <div id="timerFill"></div>
-  </div>
+  <div id="timerBar"><div id="timerFill"></div></div>
+
+  <div id="instruction">Type <b>!guess &lt;word&gt;</b> in chat</div>
 
   <div id="winner"></div>
   <div id="nextWord"></div>
-
-  <div id="scoreboard">
-    Twitch: <span id="twitchScore">0</span>
-    &nbsp;|&nbsp;
-    Kick: <span id="kickScore">0</span>
-  </div>
+  <div id="leaderboard"></div>
 </div>
 
 <script>
   const wordEl = document.getElementById("word");
   const winnerEl = document.getElementById("winner");
   const nextWordEl = document.getElementById("nextWord");
-  const twitchScoreEl = document.getElementById("twitchScore");
-  const kickScoreEl = document.getElementById("kickScore");
+  const leaderboardEl = document.getElementById("leaderboard");
   const timerFill = document.getElementById("timerFill");
 
   const winSound = new Audio("win.mp3");
@@ -109,17 +128,24 @@
     timerFill.style.width = "100%";
   }
 
+  function renderLeaderboard(list) {
+    leaderboardEl.innerHTML = "<b>Leaderboard</b>";
+    list.forEach((u, i) => {
+      const row = document.createElement("div");
+      row.className = "leader";
+      row.innerHTML = `<span>${i + 1}. ${u.name}</span><span>${u.score}</span>`;
+      leaderboardEl.appendChild(row);
+    });
+  }
+
   window.addEventListener("message", (e) => {
     const data = e.data;
 
     if (data.type === "word") {
       wordEl.innerText = data.value;
-
-      if (
-        data.value === "WAITING FOR !WORD" ||
-        data.value === "WORD GAME ENDED"
-      ) {
+      if (data.value === "WAITING FOR !WORD" || data.value === "WORD GAME ENDED") {
         stopTimer();
+        winnerEl.innerText = "";
       } else {
         startTimer();
       }
@@ -129,14 +155,12 @@
       winnerEl.innerText = data.name ? `Winner: ${data.name}` : "";
     }
 
-    if (data.type === "score") {
-      twitchScoreEl.innerText = data.twitch;
-      kickScoreEl.innerText = data.kick;
+    if (data.type === "leaderboard") {
+      renderLeaderboard(data);
     }
 
     if (data.type === "countdown") {
-      nextWordEl.innerText =
-        data.seconds > 0 ? `Next word in ${data.seconds}s` : "";
+      nextWordEl.innerText = data.seconds > 0 ? `Next word in ${data.seconds}s` : "";
     }
 
     if (data.type === "win") {
