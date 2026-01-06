@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>CHAT Word Game</title>
+<title>Chat Word Game</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet">
 
@@ -12,54 +12,28 @@
     background: transparent;
     font-family: 'Metal Mania', cursive;
     color: white;
-    -webkit-font-smoothing: antialiased;
   }
 
   #container {
-    position: relative;
-    padding: 22px 30px;
-    background: rgba(5, 5, 5, 0.9);
-    border-radius: 16px;
+    background: rgba(5,5,5,0.9);
     border: 2px solid #8b0000;
+    border-radius: 14px;
+    padding: 20px 28px;
     box-shadow: 0 0 18px rgba(180,0,0,0.55);
     width: fit-content;
-  }
-
-  #title {
-    font-size: 42px;
-    color: #ff1a1a;
-    text-shadow: 0 0 6px rgba(255,0,0,0.8);
-  }
-
-  #subtitle {
-    font-size: 14px;
-    color: #aaa;
-    font-family: Arial, sans-serif;
-    margin-bottom: 10px;
   }
 
   #word {
     font-size: 64px;
     letter-spacing: 12px;
-    font-family: Arial, sans-serif;
     color: #ff2b2b;
-    margin: 12px 0;
-  }
-
-  .pulse {
-    animation: pulse 0.35s ease-out;
-  }
-
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.06); }
-    100% { transform: scale(1); }
+    margin: 10px 0;
   }
 
   #timerBar {
     width: 100%;
     height: 6px;
-    background: rgba(255,0,0,0.2);
+    background: rgba(255,0,0,0.25);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -70,11 +44,21 @@
     background: linear-gradient(90deg, #ff1a1a, #8b0000);
   }
 
-  #status {
-    font-size: 15px;
+  #winner {
+    margin-top: 6px;
+    font-size: 20px;
+    color: #ffd700;
+  }
+
+  #nextWord {
+    margin-top: 6px;
+    font-size: 16px;
     color: #ccc;
-    font-family: Arial, sans-serif;
-    margin-top: 8px;
+  }
+
+  #scoreboard {
+    margin-top: 10px;
+    font-size: 18px;
   }
 </style>
 </head>
@@ -82,32 +66,38 @@
 <body>
 
 <div id="container">
-  <div id="title">CHAT WORD GAME</div>
-  <div id="subtitle">Guess the word in chat</div>
-
   <div id="word">WAITING FOR !WORD</div>
 
   <div id="timerBar">
     <div id="timerFill"></div>
   </div>
 
-  <div id="status">Type !guess &lt;word&gt;</div>
+  <div id="winner"></div>
+  <div id="nextWord"></div>
+
+  <div id="scoreboard">
+    Twitch: <span id="twitchScore">0</span>
+    &nbsp;|&nbsp;
+    Kick: <span id="kickScore">0</span>
+  </div>
 </div>
 
 <script>
   const wordEl = document.getElementById("word");
+  const winnerEl = document.getElementById("winner");
+  const nextWordEl = document.getElementById("nextWord");
+  const twitchScoreEl = document.getElementById("twitchScore");
+  const kickScoreEl = document.getElementById("kickScore");
   const timerFill = document.getElementById("timerFill");
-  const statusEl = document.getElementById("status");
 
-  const ROUND_TIME = 30;
-  let timerRunning = false;
+  const winSound = new Audio("win.mp3");
+  winSound.volume = 0.7;
+
+  const ROUND_TIME = 180;
 
   function startTimer() {
-    stopTimer();
-    timerRunning = true;
     timerFill.style.transition = "none";
     timerFill.style.width = "100%";
-
     requestAnimationFrame(() => {
       timerFill.style.transition = `width ${ROUND_TIME}s linear`;
       timerFill.style.width = "0%";
@@ -115,30 +105,43 @@
   }
 
   function stopTimer() {
-    timerRunning = false;
     timerFill.style.transition = "none";
     timerFill.style.width = "100%";
   }
 
   window.addEventListener("message", (e) => {
     const data = e.data;
-    if (!data || data.type !== "word") return;
-    if (typeof data.value !== "string") return;
 
-    wordEl.innerText = data.value;
-    wordEl.classList.remove("pulse");
-    void wordEl.offsetWidth;
-    wordEl.classList.add("pulse");
+    if (data.type === "word") {
+      wordEl.innerText = data.value;
 
-    if (
-      data.value === "WAITING FOR !WORD" ||
-      data.value === "WORD GAME ENDED"
-    ) {
-      stopTimer();
-      statusEl.innerText = "Type !word to start";
-    } else {
-      startTimer();
-      statusEl.innerText = "Guess using !guess <word>";
+      if (
+        data.value === "WAITING FOR !WORD" ||
+        data.value === "WORD GAME ENDED"
+      ) {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    if (data.type === "winner") {
+      winnerEl.innerText = data.name ? `Winner: ${data.name}` : "";
+    }
+
+    if (data.type === "score") {
+      twitchScoreEl.innerText = data.twitch;
+      kickScoreEl.innerText = data.kick;
+    }
+
+    if (data.type === "countdown") {
+      nextWordEl.innerText =
+        data.seconds > 0 ? `Next word in ${data.seconds}s` : "";
+    }
+
+    if (data.type === "win") {
+      winSound.currentTime = 0;
+      winSound.play();
     }
   });
 </script>
